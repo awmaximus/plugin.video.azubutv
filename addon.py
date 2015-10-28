@@ -18,15 +18,20 @@ def GetJSON(url,is_gzip,is_policy):
   if is_gzip: request.add_header('Accept-encoding', 'gzip')
   if is_policy: request.add_header('BCOV-Policy', 'BCpkADawqM1A0CwPyYtV8VTU1T_ObgxukCOGnqfrz2ypCNmBTdQ0ZHIRGI_-Snwe5VZ5fz5VGn9DIrKLwNsm-2bylBYbuXdWovgGRExPeytxXQ0NOK1onOiXhjBDBmSlrzSWVUWvYDSjYc1-')
   response = urllib2.urlopen(request)
+  jsonstr = ''
   if is_gzip:
     buf = StringIO.StringIO(response.read())
     f = gzip.GzipFile(fileobj=buf)
-    jsonDict = json.loads(f.read())
+    jsonstr = f.read()
+    jsonDict = json.loads(jsonstr)
   else:
-    jsonDict = json.loads(response.read())
+    jsonstr = response.read()
+    jsonDict = json.loads(jsonstr)
+  #print jsonstr
   return jsonDict
 
 def GetVideoURL(ref,find):
+  #print BASE_STREAM_URL+ref
   videostream = GetJSON(BASE_STREAM_URL+ref,False,True)
   for source in videostream['sources']:
     if source.has_key('src'):
@@ -120,11 +125,14 @@ def list_videos_by_user(user):
   if videos != []:
     videos = videos['data']
     for video in videos:
-      title = video['title']
-      img = video['thumbnail']
-      ref = video['reference_id']
-      videourl = GetVideoURL(ref,'brightcove')
-      items.append({'label': title, 'icon': img, 'path': videourl, 'is_playable': True})
+      if video['status'] == 'ACTIVE':
+        title = video['title']
+        img = video['thumbnail']
+        ref = video['reference_id']
+        created_at = video['created_at']
+        info_type = {'credits': user, 'dateadded': created_at}
+        videourl = GetVideoURL(ref,'brightcove')
+        items.append({'label': title, 'icon': img, 'info_type': info_type, 'path': videourl, 'is_playable': True})
   return items
   
 
